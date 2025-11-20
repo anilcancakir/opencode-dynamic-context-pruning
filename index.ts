@@ -21,6 +21,37 @@ export default (async (ctx) => {
     const toolParametersCache = new Map<string, any>() // callID -> parameters
     const janitor = new Janitor(ctx.client, stateManager, logger, toolParametersCache)
 
+    const cacheToolParameters = (messages: any[], component: string) => {
+        for (const message of messages) {
+            if (message.role !== 'assistant' || !Array.isArray(message.tool_calls)) {
+                continue
+            }
+
+            for (const toolCall of message.tool_calls) {
+                if (!toolCall.id || !toolCall.function) {
+                    continue
+                }
+
+                try {
+                    const params = typeof toolCall.function.arguments === 'string'
+                        ? JSON.parse(toolCall.function.arguments)
+                        : toolCall.function.arguments
+                    toolParametersCache.set(toolCall.id, {
+                        tool: toolCall.function.name,
+                        parameters: params
+                    })
+                    logger.debug(component, "Cached tool parameters", {
+                        callID: toolCall.id,
+                        tool: toolCall.function.name,
+                        hasParams: !!params
+                    })
+                } catch (error) {
+                    // Ignore JSON parse errors for individual tool calls
+                }
+            }
+        }
+    }
+
     // Lightweight global fetch wrapper that only caches tool parameters so Janitor can display
     // meaningful metadata even if the plugin loads mid-session before chat.params runs.
     const originalGlobalFetch = globalThis.fetch
@@ -29,31 +60,7 @@ export default (async (ctx) => {
             try {
                 const body = JSON.parse(init.body)
                 if (body.messages && Array.isArray(body.messages)) {
-                    const assistantMessages = body.messages.filter((m: any) => m.role === 'assistant')
-                    for (const msg of assistantMessages) {
-                        if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
-                            for (const toolCall of msg.tool_calls) {
-                                if (toolCall.id && toolCall.function) {
-                                    try {
-                                        const params = typeof toolCall.function.arguments === 'string'
-                                            ? JSON.parse(toolCall.function.arguments)
-                                            : toolCall.function.arguments
-                                        toolParametersCache.set(toolCall.id, {
-                                            tool: toolCall.function.name,
-                                            parameters: params
-                                        })
-                                        logger.debug("global-fetch", "Cached tool parameters", {
-                                            callID: toolCall.id,
-                                            tool: toolCall.function.name,
-                                            hasParams: !!params
-                                        })
-                                    } catch (e) {
-                                        // Ignore JSON parse errors for individual tool calls
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    cacheToolParameters(body.messages, "global-fetch")
                 }
             } catch (e) {
                 // Ignore parse errors and fall through to original fetch
@@ -170,31 +177,7 @@ export default (async (ctx) => {
                     })
 
                     // Capture tool call parameters from assistant messages so Janitor toast metadata stays rich
-                    const assistantMessages = parsedBody.messages.filter((m: any) => m.role === 'assistant')
-                    for (const msg of assistantMessages) {
-                        if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
-                            for (const toolCall of msg.tool_calls) {
-                                if (toolCall.id && toolCall.function) {
-                                    try {
-                                        const params = typeof toolCall.function.arguments === 'string'
-                                            ? JSON.parse(toolCall.function.arguments)
-                                            : toolCall.function.arguments
-                                        toolParametersCache.set(toolCall.id, {
-                                            tool: toolCall.function.name,
-                                            parameters: params
-                                        })
-                                        logger.debug("pruning-fetch", "Cached tool parameters", {
-                                            callID: toolCall.id,
-                                            tool: toolCall.function.name,
-                                            hasParams: !!params
-                                        })
-                                    } catch (e) {
-                                        // Ignore JSON parse errors on tool arguments
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    cacheToolParameters(parsedBody.messages, "pruning-fetch")
                 }
 
                 // Reset the count for this request
