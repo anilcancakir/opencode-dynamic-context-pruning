@@ -7,7 +7,38 @@ import { Janitor } from "./lib/janitor"
 import { join } from "path"
 import { homedir } from "os"
 
-export default (async (ctx) => {
+/**
+ * Checks if a session is a subagent (child session)
+ * Subagent sessions should skip pruning operations
+ */
+async function isSubagentSession(
+    client: any,
+    sessionID: string,
+    logger: Logger
+): Promise<boolean> {
+    try {
+        const result = await client.session.get({ path: { id: sessionID } })
+        
+        if (result.data?.parentID) {
+            logger.debug("subagent-check", "Detected subagent session, skipping pruning", {
+                sessionID,
+                parentID: result.data.parentID
+            })
+            return true
+        }
+        
+        return false
+    } catch (error: any) {
+        logger.error("subagent-check", "Failed to check if session is subagent", {
+            sessionID,
+            error: error.message
+        })
+        // On error, assume it's not a subagent and continue (fail open)
+        return false
+    }
+}
+
+const plugin: Plugin = (async (ctx) => {
     const config = getConfig()
 
     // Suppress AI SDK warnings about responseFormat (harmless for our use case)
@@ -19,7 +50,8 @@ export default (async (ctx) => {
     const logger = new Logger(config.debug)
     const stateManager = new StateManager()
     const toolParametersCache = new Map<string, any>() // callID -> parameters
-    const janitor = new Janitor(ctx.client, stateManager, logger, toolParametersCache, config.protectedTools)
+    const modelCache = new Map<string, { providerID: string; modelID: string }>() // sessionID -> model info
+    const janitor = new Janitor(ctx.client, stateManager, logger, toolParametersCache, config.protectedTools, modelCache)
 
     const cacheToolParameters = (messages: any[], component: string) => {
         for (const message of messages) {
@@ -52,15 +84,66 @@ export default (async (ctx) => {
         }
     }
 
-    // Lightweight global fetch wrapper that only caches tool parameters so Janitor can display
-    // meaningful metadata even if the plugin loads mid-session before chat.params runs.
+    // Global fetch wrapper that both caches tool parameters AND performs pruning
+    // This works because all providers ultimately call globalThis.fetch
     const originalGlobalFetch = globalThis.fetch
     globalThis.fetch = async (input: any, init?: any) => {
         if (init?.body && typeof init.body === 'string') {
             try {
                 const body = JSON.parse(init.body)
                 if (body.messages && Array.isArray(body.messages)) {
+                    // Cache tool parameters for janitor metadata
                     cacheToolParameters(body.messages, "global-fetch")
+                    
+                    // Perform pruning: collect all pruned IDs across all non-subagent sessions
+                    const toolMessages = body.messages.filter((m: any) => m.role === 'tool')
+                    if (toolMessages.length > 0) {
+                        logger.debug("global-fetch", "Found tool messages in request", {
+                            toolMessageCount: toolMessages.length,
+                            toolCallIds: toolMessages.map((m: any) => m.tool_call_id).slice(0, 5)
+                        })
+
+                        // Collect all pruned IDs across all sessions, excluding subagent sessions
+                        const allSessions = await ctx.client.session.list()
+                        const allPrunedIds = new Set<string>()
+
+                        if (allSessions.data) {
+                            for (const session of allSessions.data) {
+                                // Skip subagent sessions
+                                if (session.parentID) {
+                                    continue
+                                }
+                                
+                                const prunedIds = await stateManager.get(session.id)
+                                prunedIds.forEach(id => allPrunedIds.add(id))
+                            }
+                        }
+
+                        if (allPrunedIds.size > 0) {
+                            let replacedCount = 0
+                            body.messages = body.messages.map((m: any) => {
+                                if (m.role === 'tool' && allPrunedIds.has(m.tool_call_id)) {
+                                    replacedCount++
+                                    return {
+                                        ...m,
+                                        content: '[Output removed to save context - information superseded or no longer needed]'
+                                    }
+                                }
+                                return m
+                            })
+
+                            if (replacedCount > 0) {
+                                logger.info("global-fetch", "✂️ Replaced pruned tool messages", {
+                                    totalPrunedIds: allPrunedIds.size,
+                                    replacedCount: replacedCount,
+                                    totalMessages: body.messages.length
+                                })
+
+                                // Update the request body with modified messages
+                                init.body = JSON.stringify(body)
+                            }
+                        }
+                    }
                 }
             } catch (e) {
                 // Ignore parse errors and fall through to original fetch
@@ -83,17 +166,8 @@ export default (async (ctx) => {
          */
         event: async ({ event }) => {
             if (event.type === "session.status" && event.properties.status.type === "idle") {
-                // Get session info to check if it's a subagent
-                const result = await ctx.client.session.get({ path: { id: event.properties.sessionID } })
-
                 // Skip pruning for subagent sessions
-                if (result.data?.parentID) {
-                    logger.debug("event", "Skipping janitor for subagent session", {
-                        sessionID: event.properties.sessionID,
-                        parentID: result.data.parentID
-                    })
-                    return
-                }
+                if (await isSubagentSession(ctx.client, event.properties.sessionID, logger)) return
 
                 logger.debug("event", "Session became idle, triggering janitor", {
                     sessionID: event.properties.sessionID
@@ -116,17 +190,55 @@ export default (async (ctx) => {
         "chat.params": async (input, output) => {
             const sessionId = input.sessionID
 
-            // Get session info to check if it's a subagent
-            const result = await ctx.client.session.get({ path: { id: sessionId } })
+            // Debug: Log the entire input structure to see what we're getting
+            logger.debug("chat.params", "Hook input structure", {
+                sessionID: sessionId,
+                hasProvider: !!input.provider,
+                hasModel: !!input.model,
+                providerKeys: input.provider ? Object.keys(input.provider) : [],
+                provider: input.provider,
+                modelKeys: input.model ? Object.keys(input.model) : [],
+                model: input.model
+            })
+
+            // Cache model information for this session so janitor can access it
+            // The provider.id is actually nested at provider.info.id (not in SDK types)
+            let providerID = (input.provider as any)?.info?.id || input.provider?.id
+            const modelID = input.model?.id
+            
+            // If provider.id is not available, try to get it from the message
+            if (!providerID && input.message?.model?.providerID) {
+                providerID = input.message.model.providerID
+                logger.debug("chat.params", "Got providerID from message instead of provider object", {
+                    sessionID: sessionId,
+                    providerID: providerID
+                })
+            }
+            
+            if (providerID && modelID) {
+                modelCache.set(sessionId, {
+                    providerID: providerID,
+                    modelID: modelID
+                })
+                logger.debug("chat.params", "Cached model info for session", {
+                    sessionID: sessionId,
+                    providerID: providerID,
+                    modelID: modelID
+                })
+            } else {
+                logger.warn("chat.params", "Missing provider or model info in hook input", {
+                    sessionID: sessionId,
+                    hasProvider: !!input.provider,
+                    hasModel: !!input.model,
+                    providerID: providerID,
+                    modelID: modelID,
+                    inputKeys: Object.keys(input),
+                    messageModel: input.message?.model
+                })
+            }
 
             // Skip pruning for subagent sessions
-            if (result.data?.parentID) {
-                logger.debug("chat.params", "Skipping context pruning for subagent session", {
-                    sessionID: sessionId,
-                    parentID: result.data.parentID
-                })
-                return  // Don't wrap fetch, let it pass through unchanged
-            }
+            if (await isSubagentSession(ctx.client, sessionId, logger)) return
 
             logger.debug("chat.params", "Wrapping fetch for session", {
                 sessionID: sessionId,
@@ -252,3 +364,5 @@ export default (async (ctx) => {
         },
     }
 }) satisfies Plugin
+
+export default plugin

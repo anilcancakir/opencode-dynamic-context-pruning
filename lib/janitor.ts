@@ -4,6 +4,7 @@ import { z } from "zod"
 import type { Logger } from "./logger"
 import type { StateManager } from "./state"
 import { buildAnalysisPrompt } from "./prompt"
+import { selectModel, extractModelFromSession } from "./model-selector"
 
 export class Janitor {
     constructor(
@@ -11,22 +12,25 @@ export class Janitor {
         private stateManager: StateManager,
         private logger: Logger,
         private toolParametersCache: Map<string, any>,
-        private protectedTools: string[]
+        private protectedTools: string[],
+        private modelCache: Map<string, { providerID: string; modelID: string }>
     ) { }
 
     async run(sessionID: string) {
         this.logger.info("janitor", "Starting analysis", { sessionID })
 
         try {
-            // Fetch session history from OpenCode API
-            this.logger.debug("janitor", "Fetching session messages", { sessionID })
-            const response = await this.client.session.messages({
-                path: { id: sessionID },
-                query: { limit: 100 }
-            })
+            // Fetch session info and messages from OpenCode API
+            this.logger.debug("janitor", "Fetching session info and messages", { sessionID })
+            
+            const [sessionInfoResponse, messagesResponse] = await Promise.all([
+                this.client.session.get({ path: { id: sessionID } }),
+                this.client.session.messages({ path: { id: sessionID }, query: { limit: 100 } })
+            ])
 
+            const sessionInfo = sessionInfoResponse.data
             // Handle the response format - it should be { data: Array<{info, parts}> } or just the array
-            const messages = response.data || response
+            const messages = messagesResponse.data || messagesResponse
 
             this.logger.debug("janitor", "Retrieved messages", {
                 sessionID,
@@ -174,20 +178,42 @@ export class Janitor {
                 return
             }
 
-            // Use big-pickle model - no auth needed!
-            // Use big-pickle model (public and free, no auth needed)
-            const openai = createOpenAICompatible({
-                baseURL: "https://opencode.ai/zen/v1",
-                name: "opencode",
+            // Select appropriate model with intelligent fallback
+            // Try to get model from cache first, otherwise extractModelFromSession won't find it
+            const cachedModelInfo = this.modelCache.get(sessionID)
+            const sessionModelInfo = extractModelFromSession(sessionInfo, this.logger)
+            let currentModelInfo = cachedModelInfo || sessionModelInfo
+            
+            // Skip GitHub Copilot for background analysis - it has expensive usage
+            if (currentModelInfo && currentModelInfo.providerID === 'github-copilot') {
+                this.logger.info("janitor", "Skipping GitHub Copilot for analysis (expensive), forcing fallback", {
+                    sessionID,
+                    originalProvider: currentModelInfo.providerID,
+                    originalModel: currentModelInfo.modelID
+                })
+                currentModelInfo = undefined // Force fallback to cheaper model
+            } else if (cachedModelInfo) {
+                this.logger.debug("janitor", "Using cached model info", {
+                    sessionID,
+                    providerID: cachedModelInfo.providerID,
+                    modelID: cachedModelInfo.modelID
+                })
+            }
+            
+            const modelSelection = await selectModel(currentModelInfo, this.logger)
+            
+            this.logger.info("janitor", "Model selected for analysis", {
+                sessionID,
+                modelInfo: modelSelection.modelInfo,
+                tier: modelSelection.tier,
+                reason: modelSelection.reason
             })
-            const model = openai("big-pickle")
 
             this.logger.debug("janitor", "Starting shadow inference", { sessionID })
 
             // Analyze which tool calls are obsolete
             const result = await generateObject({
-                model,
-                mode: "json", // Use JSON mode instead of native structured outputs
+                model: modelSelection.model,
                 schema: z.object({
                     pruned_tool_call_ids: z.array(z.string()),
                     reasoning: z.string(),
