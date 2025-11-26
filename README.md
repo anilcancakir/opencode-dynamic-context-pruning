@@ -29,6 +29,12 @@ Add to your OpenCode configuration:
 
 Restart OpenCode. The plugin will automatically start optimizing your sessions.
 
+## How It Works
+
+DCP is **non-destructive**—your session data is never modified. Pruning state is kept in memory only and resets when OpenCode restarts. When requests are sent to your LLM provider, DCP intercepts them and replaces pruned tool outputs with a placeholder; original content remains intact in your session.
+
+**Trade-off:** LLM providers cache prompts for faster/cheaper responses. Since DCP modifies message content, it may reduce cache hit rates. Token savings typically outweigh this, but be aware if your workflow relies heavily on prompt caching.
+
 ## Configuration
 
 DCP uses its own configuration file, separate from OpenCode's `opencode.json`:
