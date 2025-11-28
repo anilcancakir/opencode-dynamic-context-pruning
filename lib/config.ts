@@ -35,7 +35,7 @@ const defaultConfig: PluginConfig = {
     pruning_summary: 'detailed',
     strategies: {
         onIdle: ['deduplication', 'ai-analysis'],
-        onTool: ['deduplication']
+        onTool: ['deduplication', 'ai-analysis']
     }
 }
 
@@ -114,7 +114,7 @@ function createDefaultConfig(): void {
     // Strategies to run when session goes idle
     "onIdle": ["deduplication", "ai-analysis"],
     // Strategies to run when AI calls context_pruning tool
-    "onTool": ["deduplication"]
+    "onTool": ["deduplication", "ai-analysis"]
   },
   // Summary display: "off", "minimal", or "detailed"
   "pruning_summary": "detailed",

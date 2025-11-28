@@ -100,6 +100,24 @@ const plugin: Plugin = (async (ctx) => {
                             })
 
                             if (logger.enabled) {
+                                // Fetch session messages to extract reasoning blocks
+                                let sessionMessages: any[] | undefined
+                                try {
+                                    const activeSessions = allSessions.data?.filter(s => !s.parentID) || []
+                                    if (activeSessions.length > 0) {
+                                        const mostRecentSession = activeSessions[0]
+                                        const messagesResponse = await ctx.client.session.messages({
+                                            path: { id: mostRecentSession.id },
+                                            query: { limit: 100 }
+                                        })
+                                        sessionMessages = Array.isArray(messagesResponse.data)
+                                            ? messagesResponse.data
+                                            : Array.isArray(messagesResponse) ? messagesResponse : undefined
+                                    }
+                                } catch (e) {
+                                    // Silently continue without session messages
+                                }
+
                                 await logger.saveWrappedContext(
                                     "global",
                                     body.messages,
@@ -107,7 +125,8 @@ const plugin: Plugin = (async (ctx) => {
                                         url: typeof input === 'string' ? input : 'URL object',
                                         replacedCount,
                                         totalMessages: body.messages.length
-                                    }
+                                    },
+                                    sessionMessages
                                 )
                             }
 

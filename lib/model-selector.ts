@@ -8,7 +8,7 @@ export interface ModelInfo {
 
 export const FALLBACK_MODELS: Record<string, string> = {
     openai: 'gpt-5-mini',
-    anthropic: 'claude-haiku-4-5',
+    anthropic: 'claude-haiku-4-5', //This model isn't broken in opencode-auth-provider
     google: 'gemini-2.5-flash',
     deepseek: 'deepseek-chat',
     xai: 'grok-4-fast',
@@ -28,6 +28,7 @@ const PROVIDER_PRIORITY = [
     'opencode'
 ];
 
+// TODO: some anthropic provided models aren't supported by the opencode-auth-provider package, so this provides a temporary workaround
 const SKIP_PROVIDERS = ['github-copilot', 'anthropic'];
 
 export interface ModelSelectionResult {

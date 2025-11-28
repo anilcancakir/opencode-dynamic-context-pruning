@@ -26,6 +26,28 @@ function minimizeMessages(messages: any[], alreadyPrunedIds?: string[], protecte
                         }
                     }
 
+                    // TODO: This should use the opencode normalized system instead of per provider settings
+                    if (part.type === 'reasoning') {
+                        // Calculate encrypted content size if present
+                        let encryptedContentLength = 0
+                        if (part.metadata?.openai?.reasoningEncryptedContent) {
+                            encryptedContentLength = part.metadata.openai.reasoningEncryptedContent.length
+                        } else if (part.metadata?.anthropic?.signature) {
+                            encryptedContentLength = part.metadata.anthropic.signature.length
+                        } else if (part.metadata?.google?.thoughtSignature) {
+                            encryptedContentLength = part.metadata.google.thoughtSignature.length
+                        }
+
+                        return {
+                            type: 'reasoning',
+                            text: part.text,
+                            textLength: part.text?.length || 0,
+                            encryptedContentLength,
+                            ...(part.time && { time: part.time }),
+                            ...(part.metadata && { metadataKeys: Object.keys(part.metadata) })
+                        }
+                    }
+
                     if (part.type === 'tool') {
                         const callIDLower = part.callID?.toLowerCase()
                         const isAlreadyPruned = prunedIdsSet.has(callIDLower)

@@ -13,7 +13,7 @@ Add to your OpenCode config:
 ```jsonc
 // opencode.jsonc
 {
-  "plugins": ["@tarquinen/opencode-dcp@0.3.19"]
+  "plugin": ["@tarquinen/opencode-dcp@0.3.20"]
 }
 ```
 
@@ -48,7 +48,7 @@ DCP uses its own config file (`~/.config/opencode/dcp.jsonc` or `.opencode/dcp.j
 | `pruning_summary` | `"detailed"` | `"off"`, `"minimal"`, or `"detailed"` |
 | `protectedTools` | `["task", "todowrite", "todoread", "context_pruning"]` | Tools that are never pruned |
 | `strategies.onIdle` | `["deduplication", "ai-analysis"]` | Strategies for automatic pruning |
-| `strategies.onTool` | `["deduplication"]` | Strategies when AI calls `context_pruning` |
+| `strategies.onTool` | `["deduplication", "ai-analysis"]` | Strategies when AI calls `context_pruning` |
 
 **Strategies:** `"deduplication"` (fast, zero LLM cost) and `"ai-analysis"` (maximum savings). Empty array disables that trigger.
 
@@ -57,7 +57,7 @@ DCP uses its own config file (`~/.config/opencode/dcp.jsonc` or `.opencode/dcp.j
   "enabled": true,
   "strategies": {
     "onIdle": ["deduplication", "ai-analysis"],
-    "onTool": ["deduplication"]
+    "onTool": ["deduplication", "ai-analysis"]
   },
   "protectedTools": ["task", "todowrite", "todoread", "context_pruning"]
 }

@@ -147,7 +147,42 @@ export class Logger {
         return result
     }
 
-    async saveWrappedContext(sessionID: string, messages: any[], metadata: any) {
+    private extractReasoningBlocks(sessionMessages: any[]): any[] {
+        const reasoningBlocks: any[] = []
+
+        for (const msg of sessionMessages) {
+            if (!msg.parts) continue
+
+            for (const part of msg.parts) {
+                if (part.type === "reasoning") {
+                    // Calculate encrypted content size for different providers
+                    let encryptedContentLength = 0
+                    if (part.metadata?.openai?.reasoningEncryptedContent) {
+                        encryptedContentLength = part.metadata.openai.reasoningEncryptedContent.length
+                    } else if (part.metadata?.anthropic?.signature) {
+                        encryptedContentLength = part.metadata.anthropic.signature.length
+                    } else if (part.metadata?.google?.thoughtSignature) {
+                        encryptedContentLength = part.metadata.google.thoughtSignature.length
+                    }
+
+                    reasoningBlocks.push({
+                        messageId: msg.id,
+                        messageRole: msg.role,
+                        text: part.text,
+                        textLength: part.text?.length || 0,
+                        encryptedContentLength,
+                        time: part.time,
+                        hasMetadata: !!part.metadata,
+                        metadataKeys: part.metadata ? Object.keys(part.metadata) : []
+                    })
+                }
+            }
+        }
+
+        return reasoningBlocks
+    }
+
+    async saveWrappedContext(sessionID: string, messages: any[], metadata: any, sessionMessages?: any[]) {
         if (!this.enabled) return
 
         try {
@@ -197,11 +232,24 @@ export class Logger {
                     }
                 }
             } else {
+                // Extract reasoning blocks from session messages if available
+                const reasoningBlocks = sessionMessages
+                    ? this.extractReasoningBlocks(sessionMessages)
+                    : []
+
                 content = {
                     timestamp: new Date().toISOString(),
                     sessionID,
                     metadata,
-                    messages
+                    messages,
+                    ...(reasoningBlocks.length > 0 && {
+                        reasoning: {
+                            count: reasoningBlocks.length,
+                            totalTextCharacters: reasoningBlocks.reduce((sum, b) => sum + b.textLength, 0),
+                            totalEncryptedCharacters: reasoningBlocks.reduce((sum, b) => sum + b.encryptedContentLength, 0),
+                            blocks: reasoningBlocks
+                        }
+                    })
                 }
             }
 
