@@ -34,7 +34,7 @@ const defaultConfig: PluginConfig = {
     showModelErrorToasts: true,
     strictModelSelection: false,
     pruning_summary: 'detailed',
-    nudge_freq: 5,
+    nudge_freq: 10,
     strategies: {
         onIdle: ['deduplication', 'ai-analysis'],
         onTool: ['deduplication', 'ai-analysis']
@@ -122,7 +122,7 @@ function createDefaultConfig(): void {
   // Summary display: "off", "minimal", or "detailed"
   "pruning_summary": "detailed",
   // How often to nudge the AI to prune (every N tool results, 0 = disabled)
-  "nudge_freq": 5,
+  "nudge_freq": 10,
   // Tools that should never be pruned
   "protectedTools": ["task", "todowrite", "todoread", "context_pruning"]
 }
