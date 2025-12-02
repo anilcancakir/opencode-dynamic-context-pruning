@@ -83,6 +83,20 @@ Settings are merged in order: **Defaults** → **Global** (`~/.config/opencode/d
 
 Restart OpenCode after making config changes.
 
+## Subagents
+
+DCP automatically skips processing for subagent sessions (`general`, `explore`, etc.), but subagents can still invoke the `prune` tool. To prevent this, disable the tool in your OpenCode config. Any custom agents you've defined should also have prune disabled:
+
+```jsonc
+// opencode.jsonc
+{
+  "agent": {
+    "general": { "tools": { "prune": false } },
+    "explore": { "tools": { "prune": false } }
+  }
+}
+```
+
 ## License
 
 MIT
