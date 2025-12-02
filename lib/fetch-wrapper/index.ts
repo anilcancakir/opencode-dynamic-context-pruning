@@ -81,7 +81,7 @@ export function installFetchWrapper(
 
                 // Run deduplication after handlers have populated toolParameters cache
                 const sessionId = state.lastSeenSessionId
-                if (sessionId && state.toolParameters.size > 1) {
+                if (sessionId && state.toolParameters.size > 0) {
                     const toolIds = Array.from(state.toolParameters.keys())
                     const alreadyPruned = state.prunedIds.get(sessionId) ?? []
                     const alreadyPrunedLower = new Set(alreadyPruned.map(id => id.toLowerCase()))
@@ -89,7 +89,9 @@ export function installFetchWrapper(
                     if (unpruned.length > 1) {
                         const { duplicateIds } = detectDuplicates(state.toolParameters, unpruned, config.protectedTools)
                         if (duplicateIds.length > 0) {
-                            state.prunedIds.set(sessionId, [...new Set([...alreadyPruned, ...duplicateIds])])
+                            // Normalize to lowercase to match janitor's ID normalization
+                            const normalizedIds = duplicateIds.map(id => id.toLowerCase())
+                            state.prunedIds.set(sessionId, [...new Set([...alreadyPruned, ...normalizedIds])])
                         }
                     }
                 }
