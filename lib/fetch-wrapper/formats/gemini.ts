@@ -87,9 +87,10 @@ export const geminiFormat: FormatDescriptor = {
                         const toolCallId = positionMapping.get(positionKey)
 
                         if (toolCallId) {
+                            const metadata = state.toolParameters.get(toolCallId.toLowerCase())
                             outputs.push({
                                 id: toolCallId.toLowerCase(),
-                                toolName: funcName
+                                toolName: metadata?.tool
                             })
                         }
                     }

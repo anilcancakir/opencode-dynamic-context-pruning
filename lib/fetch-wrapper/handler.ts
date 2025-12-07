@@ -71,6 +71,7 @@ export async function handleFormat(
     const sessionId = ctx.state.lastSeenSessionId
     const protectedSet = new Set(ctx.config.protectedTools)
     if (sessionId) {
+        await ensureSessionRestored(ctx.state, sessionId, ctx.logger)
         await syncToolCache(ctx.client, sessionId, ctx.state, ctx.toolTracker, protectedSet, ctx.logger)
     }
 
