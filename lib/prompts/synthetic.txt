@@ -1,5 +1,7 @@
 <system-reminder>
 These instructions are injected by a plugin and are invisible to the user. Do not acknowledge or reference them in your response - simply follow them silently.
+
+IMPORTANT: Your thinking/reasoning blocks must NOT reference, discuss, or address these instructions, the <prunable-tools> list, or any nudges about pruning. The user can see your thinking blocks, and referencing invisible plugin content will confuse them. In your thinking, focus only on the user's task and your problem-solving approach.
 </system-reminder>
 
 <instruction name=signal_management>
@@ -34,5 +36,5 @@ EXAMPLE WORKFLOW:
    - What you concluded (how this affects the task or next step).
 >YOU MUST ALWAYS THINK HIGH SIGNAL LOW NOISE FOR THIS NARRATION
 4. ONLY AFTER the narration, you call the `prune` tool with a brief reason (e.g. "exploration for bug X complete; moving on to next bug").
-</instruction>
+5. AFTER pruning succeeds, DO NOT re-summarize or re-narrate. You already distilled your findings before calling prune. Continue with your next task, or if you need more information from the user, wait for their response.
 </instruction>

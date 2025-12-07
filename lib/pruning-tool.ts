@@ -121,17 +121,8 @@ export function createPruningTool(
                 resetToolTrackerCount(toolTracker)
             }
 
-            const result = {
-                prunedCount: prunedIds.length,
-                tokensSaved,
-                llmPrunedIds: prunedIds,
-                toolMetadata,
-                sessionStats
-            }
-
-            const postPruneGuidance = "\n\nYou have already distilled relevant understanding in writing before calling this tool. Do not re-narrate; continue with your next task."
-
-            return formatPruningResultForTool(result, workingDirectory) + postPruneGuidance
+            // Return empty string on success (like edit tool) - guidance is in tool description
+            return ""
         },
     })
 }
