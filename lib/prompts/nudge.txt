@@ -1,5 +1,3 @@
 <instruction name=agent_nudge>
-If you have completed a unit of work:
-1. DISTILL your findings into text for the user to keep.
-2. Use the `prune` tool to remove obsolete tool outputs.
+You have accumulated several tool outputs. Consider using the `prune` tool to declutter the conversation context.
 </instruction>
