@@ -23,12 +23,11 @@ export const bedrockFormat: FormatDescriptor = {
 
     injectSystemMessage(body: any, injection: string): boolean {
         if (!injection) return false
-        
-        // Bedrock uses top-level system array with text blocks
+
         if (!Array.isArray(body.system)) {
             body.system = []
         }
-        
+
         body.system.push({ text: injection })
         return true
     },

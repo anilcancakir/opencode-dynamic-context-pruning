@@ -14,9 +14,7 @@ export const openaiResponsesFormat: FormatDescriptor = {
 
     injectSystemMessage(body: any, injection: string): boolean {
         if (!injection) return false
-        
-        // OpenAI Responses API uses top-level `instructions` for system content
-        // Append to existing instructions if present
+
         if (body.instructions && typeof body.instructions === 'string') {
             body.instructions = body.instructions + '\n\n' + injection
         } else {

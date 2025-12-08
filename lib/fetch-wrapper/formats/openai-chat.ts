@@ -14,16 +14,14 @@ export const openaiChatFormat: FormatDescriptor = {
 
     injectSystemMessage(body: any, injection: string): boolean {
         if (!injection || !body.messages) return false
-        
-        // Find the last system message index to insert after it
+
         let lastSystemIndex = -1
         for (let i = 0; i < body.messages.length; i++) {
             if (body.messages[i].role === 'system') {
                 lastSystemIndex = i
             }
         }
-        
-        // Insert after the last system message, or at the beginning if none exist
+
         const insertIndex = lastSystemIndex + 1
         body.messages.splice(insertIndex, 0, { role: 'system', content: injection })
         return true

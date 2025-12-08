@@ -19,15 +19,14 @@ export const geminiFormat: FormatDescriptor = {
 
     injectSystemMessage(body: any, injection: string): boolean {
         if (!injection) return false
-        
-        // Gemini uses systemInstruction.parts array for system content
+
         if (!body.systemInstruction) {
             body.systemInstruction = { parts: [] }
         }
         if (!Array.isArray(body.systemInstruction.parts)) {
             body.systemInstruction.parts = []
         }
-        
+
         body.systemInstruction.parts.push({ text: injection })
         return true
     },

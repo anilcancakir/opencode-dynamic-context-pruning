@@ -10,8 +10,6 @@ export const anthropicFormat: FormatDescriptor = {
     name: 'anthropic',
 
     detect(body: any): boolean {
-        // Anthropic has top-level `system` field (can be string or array) AND messages array
-        // This distinguishes it from OpenAI (no top-level system) and Bedrock (has inferenceConfig)
         return (
             body.system !== undefined &&
             Array.isArray(body.messages)
@@ -24,19 +22,13 @@ export const anthropicFormat: FormatDescriptor = {
 
     injectSystemMessage(body: any, injection: string): boolean {
         if (!injection) return false
-        
-        // Anthropic system can be:
-        // 1. A string: "You are a helpful assistant"
-        // 2. An array of blocks: [{"type": "text", "text": "...", "cache_control": {...}}]
-        
-        // Convert to array if needed
+
         if (typeof body.system === 'string') {
             body.system = [{ type: 'text', text: body.system }]
         } else if (!Array.isArray(body.system)) {
             body.system = []
         }
-        
-        // Append the injection as a text block
+
         body.system.push({ type: 'text', text: injection })
         return true
     },
@@ -45,7 +37,6 @@ export const anthropicFormat: FormatDescriptor = {
         const outputs: ToolOutput[] = []
 
         for (const m of data) {
-            // Tool results are in user messages with type='tool_result'
             if (m.role === 'user' && Array.isArray(m.content)) {
                 for (const block of m.content) {
                     if (block.type === 'tool_result' && block.tool_use_id) {
@@ -75,8 +66,6 @@ export const anthropicFormat: FormatDescriptor = {
                 const newContent = m.content.map((block: any) => {
                     if (block.type === 'tool_result' && block.tool_use_id?.toLowerCase() === toolIdLower) {
                         messageModified = true
-                        // Anthropic tool_result content can be string or array of content blocks
-                        // Replace with simple string
                         return {
                             ...block,
                             content: prunedMessage
