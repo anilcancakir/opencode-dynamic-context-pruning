@@ -1,7 +1,7 @@
 Prunes tool outputs from context to manage conversation size.
 
 ## IMPORTANT: The Prunable List
-A list of available tool outputs (with numeric IDs) is maintained for you in the SYSTEM ROLE at the beginning of the context. This list is always up-to-date. You can rely on it to pick tools to prune.
+A list of available tool outputs (with numeric IDs) is maintained for you in the SYSTEM PROMPT at the beginning of the context. This list is always up-to-date. You can rely on it to pick tools to prune.
 
 ## CRITICAL: Distill Before Pruning (NON-NEGOTIABLE)
 
