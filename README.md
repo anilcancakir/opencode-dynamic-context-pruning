@@ -4,7 +4,7 @@
 
 Automatically reduces token usage in OpenCode by removing obsolete tool outputs from conversation history.
 
-![DCP in action](dcp-demo.png)
+![DCP in action](dcp-demo3.png)
 
 ## Installation
 

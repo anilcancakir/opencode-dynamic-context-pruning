@@ -42,7 +42,12 @@ export const anthropicFormat: FormatDescriptor = {
             if (msg.role === 'assistant') {
                 // Append to existing content array
                 if (Array.isArray(msg.content)) {
-                    msg.content.push({ type: 'text', text: injection })
+                    const firstToolUseIndex = msg.content.findIndex((block: any) => block.type === 'tool_use')
+                    if (firstToolUseIndex !== -1) {
+                        msg.content.splice(firstToolUseIndex, 0, { type: 'text', text: injection })
+                    } else {
+                        msg.content.push({ type: 'text', text: injection })
+                    }
                 } else if (typeof msg.content === 'string') {
                     // Convert string content to array format
                     msg.content = [
