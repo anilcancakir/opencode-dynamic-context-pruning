@@ -4,7 +4,7 @@ import type { PluginConfig } from "./config"
 import type { ToolTracker } from "./fetch-wrapper/tool-tracker"
 import type { ToolMetadata, PruneReason } from "./fetch-wrapper/types"
 import { resetToolTrackerCount } from "./fetch-wrapper/tool-tracker"
-import { isSubagentSession, findCurrentAgent } from "./hooks"
+import { findCurrentAgent } from "./hooks"
 import { getActualId } from "./state/id-mapping"
 import { sendUnifiedNotification, type NotificationContext } from "./ui/notification"
 import { formatPruningResultForTool } from "./ui/display-utils"
@@ -50,10 +50,6 @@ export function createPruningTool(
         async execute(args, toolCtx) {
             const { client, state, logger, config, notificationCtx } = ctx
             const sessionId = toolCtx.sessionID
-
-            if (await isSubagentSession(client, sessionId)) {
-                return "Pruning is unavailable in subagent sessions. Do not call this tool again. Continue with your current task - if you were in the middle of work, proceed with your next step. If you had just finished, provide your final summary/findings to return to the main agent."
-            }
 
             if (!args.ids || args.ids.length === 0) {
                 return "No IDs provided. Check the <prunable-tools> list for available IDs to prune."

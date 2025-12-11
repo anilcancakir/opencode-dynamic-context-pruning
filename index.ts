@@ -75,6 +75,18 @@ const plugin: Plugin = (async (ctx) => {
     }
 
     return {
+        config: async (opencodeConfig) => {
+            // Add prune to primary_tools by mutating the opencode config
+            // This works because config is cached and passed by reference
+            if (config.strategies.onTool.length > 0) {
+                const existingPrimaryTools = opencodeConfig.experimental?.primary_tools ?? []
+                opencodeConfig.experimental = {
+                    ...opencodeConfig.experimental,
+                    primary_tools: [...existingPrimaryTools, "prune"],
+                }
+                logger.info("plugin", "Added 'prune' to experimental.primary_tools via config mutation")
+            }
+        },
         event: createEventHandler(ctx.client, janitorCtx, logger, config, toolTracker),
         "chat.params": createChatParamsHandler(ctx.client, state, logger, toolTracker),
         tool: config.strategies.onTool.length > 0 ? {
