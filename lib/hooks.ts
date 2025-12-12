@@ -3,6 +3,7 @@ import type { Logger } from "./logger"
 import type { PluginConfig } from "./config"
 import { syncToolCache } from "./state/tool-cache"
 import { deduplicate } from "./strategies"
+import { prune } from "./prune"
 
 
 export function createChatMessageTransformHandler(
