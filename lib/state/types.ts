@@ -25,6 +25,7 @@ export interface Prune {
 
 export interface SessionState {
     sessionId: string | null
+    isSubAgent: boolean
     prune: Prune
     stats: SessionStats
     toolParameters: Map<string, ToolParameterEntry>

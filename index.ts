@@ -42,6 +42,18 @@ const plugin: Plugin = (async (ctx) => {
                 workingDirectory: ctx.directory
             }),
         } : undefined,
+        config: async (opencodeConfig) => {
+            // Add prune to primary_tools by mutating the opencode config
+            // This works because config is cached and passed by reference
+            if (config.strategies.pruneTool.enabled) {
+                const existingPrimaryTools = opencodeConfig.experimental?.primary_tools ?? []
+                opencodeConfig.experimental = {
+                    ...opencodeConfig.experimental,
+                    primary_tools: [...existingPrimaryTools, "prune"],
+                }
+                logger.info("Added 'prune' to experimental.primary_tools via config mutation")
+            }
+        },
     }
 }) satisfies Plugin
 

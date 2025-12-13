@@ -17,11 +17,15 @@ export function createChatMessageTransformHandler(
         input: {},
         output: { messages: WithParts[] }
     ) => {
-        checkSession(state, logger, output.messages);
+        checkSession(client, state, logger, output.messages);
+        if (state.isSubAgent) {
+            return
+        }
+
         syncToolCache(state, config, logger, output.messages);
 
 
-        deduplicate(state, logger, config, output.messages)
+        deduplicate(client, state, logger, config, output.messages)
 
         prune(state, logger, config, output.messages)
 

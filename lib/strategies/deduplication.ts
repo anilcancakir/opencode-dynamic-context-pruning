@@ -9,6 +9,7 @@ import { calculateTokensSaved } from "../utils"
  * Modifies the session state in place to add pruned tool call IDs.
  */
 export const deduplicate = (
+    client: any,
     state: SessionState,
     logger: Logger,
     config: PluginConfig,

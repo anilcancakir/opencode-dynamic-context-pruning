@@ -2,8 +2,10 @@ import type { SessionState, ToolParameterEntry, WithParts } from "./types"
 import type { Logger } from "../logger"
 import { loadSessionState } from "./persistence"
 import { getLastUserMessage } from "../messages/utils"
+import { isSubAgentSession } from "../utils"
 
 export const checkSession = (
+    client: any,
     state: SessionState,
     logger: Logger,
     messages: WithParts[]
@@ -19,6 +21,7 @@ export const checkSession = (
     if (state.sessionId === null || state.sessionId !== lastSessionId) {
         logger.info(`Session changed: ${state.sessionId} -> ${lastSessionId}`)
         ensureSessionInitialized(
+            client,
             state,
             lastSessionId,
             logger
@@ -31,6 +34,7 @@ export const checkSession = (
 export function createSessionState(): SessionState {
     return {
         sessionId: null,
+        isSubAgent: false,
         prune: {
             toolIds: []
         },
@@ -45,6 +49,7 @@ export function createSessionState(): SessionState {
 
 export function resetSessionState(state: SessionState): void {
     state.sessionId = null
+    state.isSubAgent = false
     state.prune = {
         toolIds: []
     }
@@ -57,6 +62,7 @@ export function resetSessionState(state: SessionState): void {
 }
 
 export async function ensureSessionInitialized(
+    client: any,
     state: SessionState,
     sessionId: string,
     logger: Logger
@@ -71,6 +77,10 @@ export async function ensureSessionInitialized(
     // Clear previous session data
     resetSessionState(state)
     state.sessionId = sessionId
+
+    const isSubAgent = await isSubAgentSession(client, sessionId)
+    state.isSubAgent = isSubAgent
+    logger.info("isSubAgent = " + isSubAgent)
 
     // Load session data from storage
     const persisted = await loadSessionState(sessionId, logger)
