@@ -73,9 +73,6 @@ export function createPruneTool(
             const pruneToolIds: string[] = getPruneToolIds(numericToolIds, toolIdList)
             state.prune.toolIds.push(...pruneToolIds)
 
-            saveSessionState(state, logger)
-                .catch(err => logger.error("Failed to persist state", { error: err.message }))
-
             const toolMetadata = new Map<string, ToolParameterEntry>()
             for (const id of pruneToolIds) {
                 const toolParameters = state.toolParameters.get(id)
@@ -103,6 +100,9 @@ export function createPruneTool(
             state.stats.totalPruneTokens += state.stats.pruneTokenCounter
             state.stats.pruneTokenCounter = 0
             state.nudgeCounter = 0
+
+            saveSessionState(state, logger)
+                .catch(err => logger.error("Failed to persist state", { error: err.message }))
 
             return formatPruningResultForTool(
                 pruneToolIds,
