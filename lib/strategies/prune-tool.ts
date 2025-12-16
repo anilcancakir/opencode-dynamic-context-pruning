@@ -1,7 +1,7 @@
 import { tool } from "@opencode-ai/plugin"
 import type { SessionState, ToolParameterEntry, WithParts } from "../state"
 import type { PluginConfig } from "../config"
-import { findCurrentAgent, buildToolIdList } from "../messages/utils"
+import { getCurrentParams, buildToolIdList } from "../messages/utils"
 import { calculateTokensSaved } from "../utils"
 import { PruneReason, sendUnifiedNotification } from "../ui/notification"
 import { formatPruningResultForTool } from "../ui/display-utils"
@@ -68,7 +68,7 @@ export function createPruneTool(
             })
             const messages: WithParts[] = messagesResponse.data || messagesResponse
 
-            const currentAgent: string | undefined = findCurrentAgent(messages)
+            const currentParams = getCurrentParams(messages, logger)
             const toolIdList: string[] = buildToolIdList(messages)
 
             // Validate that all numeric IDs are within bounds
@@ -109,9 +109,10 @@ export function createPruneTool(
                 pruneToolIds,
                 toolMetadata,
                 reason as PruneReason,
-                currentAgent,
+                currentParams,
                 workingDirectory
             )
+
             state.stats.totalPruneTokens += state.stats.pruneTokenCounter
             state.stats.pruneTokenCounter = 0
             state.nudgeCounter = 0

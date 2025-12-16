@@ -63,7 +63,7 @@ export async function sendUnifiedNotification(
     pruneToolIds: string[],
     toolMetadata: Map<string, ToolParameterEntry>,
     reason: PruneReason | undefined,
-    agent: string | undefined,
+    params: any,
     workingDirectory: string
 ): Promise<boolean> {
     const hasPruned = pruneToolIds.length > 0
@@ -79,23 +79,32 @@ export async function sendUnifiedNotification(
         ? buildMinimalMessage(state, reason)
         : buildDetailedMessage(state, reason, pruneToolIds, toolMetadata, workingDirectory)
 
-    await sendIgnoredMessage(client, logger, sessionId, message, agent)
+    await sendIgnoredMessage(client, sessionId, message, params, logger)
     return true
 }
 
 export async function sendIgnoredMessage(
     client: any,
-    logger: Logger,
     sessionID: string,
     text: string,
-    agent?: string
+    params: any,
+    logger: Logger
 ): Promise<void> {
+    const agent = params.agent || undefined
+    const model = params.providerId && params.modelId ? {
+        providerID: params.providerId,
+        modelID: params.modelId
+    } : undefined
+
     try {
         await client.session.prompt({
-            path: { id: sessionID },
+            path: {
+                id: sessionID
+            },
             body: {
                 noReply: true,
                 agent: agent,
+                model: model,
                 parts: [{
                     type: 'text',
                     text: text,

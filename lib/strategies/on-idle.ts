@@ -3,9 +3,9 @@ import type { SessionState, WithParts, ToolParameterEntry } from "../state"
 import type { Logger } from "../logger"
 import type { PluginConfig } from "../config"
 import { buildAnalysisPrompt } from "../prompt"
-import { selectModel, extractModelFromSession, ModelInfo } from "../model-selector"
+import { selectModel, ModelInfo } from "../model-selector"
 import { calculateTokensSaved } from "../utils"
-import { findCurrentAgent } from "../messages/utils"
+import { getCurrentParams } from "../messages/utils"
 import { saveSessionState } from "../state/persistence"
 import { sendUnifiedNotification } from "../ui/notification"
 
@@ -224,7 +224,7 @@ export async function runOnIdle(
             return null
         }
 
-        const currentAgent = findCurrentAgent(messages)
+        const currentParams = getCurrentParams(messages, logger)
         const { toolCallIds, toolMetadata } = parseMessages(messages, state.toolParameters)
 
         const alreadyPrunedIds = state.prune.toolIds
@@ -295,7 +295,7 @@ export async function runOnIdle(
             newlyPrunedIds,
             prunedToolMetadata,
             undefined, // reason
-            currentAgent,
+            currentParams,
             workingDirectory || ""
         )
 

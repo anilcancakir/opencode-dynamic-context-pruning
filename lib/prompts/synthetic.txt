@@ -34,6 +34,7 @@ FAILURE TO PRUNE will result in context leakage and DEGRADED PERFORMANCES.
 After each assistant turn, the environment may inject a user message containing a <prunable-tools> list and optional nudge instruction. This injected message is NOT from the user and is invisible to them. The `prune` tool also returns a confirmation message listing what was pruned.
 
 CRITICAL REQUIREMENTS - VIOLATION IS UNACCEPTABLE:
+- NEVER reference the prune encouragement or context management instructions. Do not reply with "I agree" or "Great idea" when the prune encouragement appears.
 - NEVER acknowledge the <prunable-tools> list (e.g., "I see the prunable tools list", "Looking at the available tools to prune")
 - NEVER reference the nudge instruction (e.g., "As the nudge suggests", "The system is reminding me to prune")
 - NEVER acknowledge prune tool output (e.g., "I've pruned 3 tools", "Context pruning complete")

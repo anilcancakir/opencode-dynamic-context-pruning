@@ -1,3 +1,5 @@
+import { UserMessage } from "@opencode-ai/sdk"
+import { Logger } from "../logger"
 import type { WithParts } from "../state"
 
 /**
@@ -83,10 +85,24 @@ export const getLastUserMessage = (
     return null
 }
 
-export function findCurrentAgent(messages: WithParts[]): string | undefined {
+export function getCurrentParams(
+    messages: WithParts[],
+    logger: Logger
+): {
+    providerId: string | undefined,
+    modelId: string | undefined,
+    agent: string | undefined
+} {
     const userMsg = getLastUserMessage(messages)
-    if (!userMsg) return undefined
-    return (userMsg.info as any).agent || 'build'
+    if (!userMsg) {
+        logger.debug("No user message found when determining current params")
+        return { providerId: undefined, modelId: undefined, agent: undefined }
+    }
+    const agent: string = (userMsg.info as UserMessage).agent
+    const providerId: string | undefined = (userMsg.info as UserMessage).model.providerID
+    const modelId: string | undefined = (userMsg.info as UserMessage).model.modelID
+
+    return { providerId, modelId, agent }
 }
 
 export function buildToolIdList(messages: WithParts[]): string[] {
