@@ -31,7 +31,10 @@ export const checkSession = async (
     const lastCompactionTimestamp = findLastCompactionTimestamp(messages)
     if (lastCompactionTimestamp > state.lastCompaction) {
         state.lastCompaction = lastCompactionTimestamp
-        logger.info("Detected compaction from messages", { timestamp: lastCompactionTimestamp })
+        // Clear stale tool data - these tools no longer exist in context
+        state.toolParameters.clear()
+        state.prune.toolIds = []
+        logger.info("Detected compaction from messages - cleared tool cache", { timestamp: lastCompactionTimestamp })
     }
 }
 

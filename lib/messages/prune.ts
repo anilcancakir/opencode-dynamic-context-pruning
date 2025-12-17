@@ -27,6 +27,10 @@ const buildPrunableToolsList = (
             return
         }
         const numericId = toolIdList.indexOf(toolCallId)
+        if (numericId === -1) {
+            logger.warn(`Tool in cache but not in toolIdList - possible stale entry`, { toolCallId, tool: toolParameterEntry.tool })
+            return
+        }
         const paramKey = extractParameterKey(toolParameterEntry.tool, toolParameterEntry.parameters)
         const description = paramKey ? `${toolParameterEntry.tool}, ${paramKey}` : toolParameterEntry.tool
         lines.push(`${numericId}: ${description}`)
