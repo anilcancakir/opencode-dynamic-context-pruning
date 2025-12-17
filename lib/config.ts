@@ -28,6 +28,10 @@ export interface PruneTool {
     nudge: PruneToolNudge
 }
 
+export interface SupersedeWrites {
+    enabled: boolean
+}
+
 export interface PluginConfig {
     enabled: boolean
     debug: boolean
@@ -36,6 +40,7 @@ export interface PluginConfig {
         deduplication: Deduplication
         onIdle: OnIdle
         pruneTool: PruneTool
+        supersedeWrites: SupersedeWrites
     }
 }
 
@@ -67,6 +72,9 @@ export const VALID_CONFIG_KEYS = new Set([
     'strategies.pruneTool.nudge',
     'strategies.pruneTool.nudge.enabled',
     'strategies.pruneTool.nudge.frequency',
+    // strategies.supersedeWrites
+    'strategies.supersedeWrites',
+    'strategies.supersedeWrites.enabled',
 ])
 
 // Extract all key paths from a config object for validation
@@ -159,6 +167,13 @@ function validateConfigTypes(config: Record<string, any>): ValidationError[] {
                 }
             }
         }
+
+        // supersedeWrites
+        if (strategies.supersedeWrites) {
+            if (strategies.supersedeWrites.enabled !== undefined && typeof strategies.supersedeWrites.enabled !== 'boolean') {
+                errors.push({ key: 'strategies.supersedeWrites.enabled', expected: 'boolean', actual: typeof strategies.supersedeWrites.enabled })
+            }
+        }
     }
 
     return errors
@@ -219,6 +234,9 @@ const defaultConfig: PluginConfig = {
             enabled: true,
             protectedTools: [...DEFAULT_PROTECTED_TOOLS]
         },
+        supersedeWrites: {
+            enabled: true
+        },
         pruneTool: {
             enabled: true,
             protectedTools: [...DEFAULT_PROTECTED_TOOLS],
@@ -255,7 +273,6 @@ function findOpencodeDir(startDir: string): string | null {
 }
 
 function getConfigPaths(ctx?: PluginInput): { global: string | null, configDir: string | null, project: string | null} {
-
     // Global: ~/.config/opencode/dcp.jsonc|json
     let globalPath: string | null = null
     if (existsSync(GLOBAL_CONFIG_PATH_JSONC)) {
@@ -263,7 +280,7 @@ function getConfigPaths(ctx?: PluginInput): { global: string | null, configDir: 
     } else if (existsSync(GLOBAL_CONFIG_PATH_JSON)) {
         globalPath = GLOBAL_CONFIG_PATH_JSON
     }
-    
+
     // Custom config directory: $OPENCODE_CONFIG_DIR/dcp.jsonc|json
     let configDirPath: string | null = null
     const opencodeConfigDir = process.env.OPENCODE_CONFIG_DIR
@@ -276,7 +293,7 @@ function getConfigPaths(ctx?: PluginInput): { global: string | null, configDir: 
             configDirPath = configJson
         }
     }
-    
+
     // Project: <project>/.opencode/dcp.jsonc|json
     let projectPath: string | null = null
     if (ctx?.directory) {
@@ -314,6 +331,10 @@ function createDefaultConfig(): void {
       "enabled": true,
       // Additional tools to protect from pruning
       "protectedTools": []
+    },
+    // Prune write tool inputs when the file has been subsequently read
+    "supersedeWrites": {
+      "enabled": true
     },
     // Exposes a prune tool to your LLM to call when it determines pruning is necessary
     "pruneTool": {
@@ -409,6 +430,9 @@ function mergeStrategies(
                 enabled: override.pruneTool?.nudge?.enabled ?? base.pruneTool.nudge.enabled,
                 frequency: override.pruneTool?.nudge?.frequency ?? base.pruneTool.nudge.frequency
             }
+        },
+        supersedeWrites: {
+            enabled: override.supersedeWrites?.enabled ?? base.supersedeWrites.enabled
         }
     }
 }
@@ -429,6 +453,9 @@ function deepCloneConfig(config: PluginConfig): PluginConfig {
                 ...config.strategies.pruneTool,
                 protectedTools: [...config.strategies.pruneTool.protectedTools],
                 nudge: { ...config.strategies.pruneTool.nudge }
+            },
+            supersedeWrites: {
+                ...config.strategies.supersedeWrites
             }
         }
     }

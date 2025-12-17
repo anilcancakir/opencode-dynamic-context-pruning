@@ -27,11 +27,11 @@ DCP uses multiple strategies to reduce context size:
 
 **Deduplication** — Identifies repeated tool calls (e.g., reading the same file multiple times) and keeps only the most recent output. Runs automatically on every request with zero LLM cost.
 
+**Supersede Writes** — Prunes write tool inputs for files that have subsequently been read. When a file is written and later read, the original write content becomes redundant since the current file state is captured in the read result. Runs automatically on every request with zero LLM cost.
+
 **Prune Tool** — Exposes a `prune` tool that the AI can call to manually trigger pruning when it determines context cleanup is needed.
 
 **On Idle Analysis** — Uses a language model to semantically analyze conversation context during idle periods and identify tool outputs that are no longer relevant.
-
-*More strategies coming soon.*
 
 Your session history is never modified. DCP replaces pruned outputs with a placeholder before sending requests to your LLM.
 
@@ -67,6 +67,10 @@ DCP uses its own config file:
       "enabled": true,
       // Additional tools to protect from pruning
       "protectedTools": []
+    },
+    // Prune write tool inputs when the file has been subsequently read
+    "supersedeWrites": {
+      "enabled": true
     },
     // Exposes a prune tool to your LLM to call when it determines pruning is necessary
     "pruneTool": {
