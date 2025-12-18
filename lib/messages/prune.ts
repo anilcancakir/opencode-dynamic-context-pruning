@@ -151,6 +151,11 @@ const pruneToolInputs = (
             if (part.tool !== 'write' && part.tool !== 'edit') {
                 continue
             }
+            // Don't prune yet if tool is still pending or running
+            if (part.state.status === "pending" || part.state.status === "running") {
+                continue
+            }
+
             if (part.state.input?.content !== undefined) {
                 part.state.input.content = PRUNED_TOOL_INPUT_REPLACEMENT
             }
