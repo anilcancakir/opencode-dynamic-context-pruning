@@ -34,11 +34,14 @@ export function createPruneTool(
             ids: tool.schema.array(
                 tool.schema.string()
             ).describe(
-                "First element is the reason ('completion', 'noise', 'consolidation'), followed by numeric IDs as strings to prune"
+                "Numeric IDs as strings to prune from the <prunable-tools> list"
             ),
-            distillation: tool.schema.record(tool.schema.string(), tool.schema.any()).optional().describe(
-                "An object containing detailed summaries or extractions of the key findings from the tools being pruned. This is REQUIRED for 'consolidation'."
-            ),
+            metadata: tool.schema.object({
+                reason: tool.schema.enum(["completion", "noise", "consolidation"]).describe("The reason for pruning"),
+                distillation: tool.schema.record(tool.schema.string(), tool.schema.any()).optional().describe(
+                    "An object containing detailed summaries or extractions of the key findings from the tools being pruned. This is REQUIRED for 'consolidation'."
+                ),
+            }).describe("Metadata about the pruning operation."),
         },
         async execute(args, toolCtx) {
             const { client, state, logger, config, workingDirectory } = ctx
@@ -52,26 +55,20 @@ export function createPruneTool(
                 return "No IDs provided. Check the <prunable-tools> list for available IDs to prune."
             }
 
-            // Parse reason from first element, numeric IDs from the rest
-
-            const reason = args.ids[0];
-            const validReasons = ["completion", "noise", "consolidation"] as const
-            if (typeof reason !== "string" || !validReasons.includes(reason as any)) {
-                logger.debug("Invalid pruning reason provided: " + reason)
-                return "No valid pruning reason found. Use 'completion', 'noise', or 'consolidation' as the first element."
+            if (!args.metadata || !args.metadata.reason) {
+                logger.debug("Prune tool called without metadata.reason: " + JSON.stringify(args))
+                return "Missing metadata.reason. Provide metadata: { reason: 'completion' | 'noise' | 'consolidation' }"
             }
 
-            const numericToolIds: number[] = args.ids.slice(1)
+            const { reason, distillation } = args.metadata;
+
+            const numericToolIds: number[] = args.ids
                 .map(id => parseInt(id, 10))
                 .filter((n): n is number => !isNaN(n))
 
-            // Extract distillation if present in the IDs array (packed as an object or long string)
-            // or if we add a dedicated non-primitive argument.
-            // For now, let's keep the schema simple and use the logic that Objects don't show in TUI.
-            const distillation = (args as any).distillation;
             if (numericToolIds.length === 0) {
                 logger.debug("No numeric tool IDs provided for pruning, yet prune tool was called: " + JSON.stringify(args))
-                return "No numeric IDs provided. Format: [reason, id1, id2, ...] where reason is 'completion', 'noise', or 'consolidation'."
+                return "No numeric IDs provided. Format: ids: [id1, id2, ...]"
             }
 
             // Fetch messages to calculate tokens and find current agent

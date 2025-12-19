@@ -1,4 +1,4 @@
-Prunes tool outputs from context to manage conversation size and reduce noise. For `write` and `edit` tools, the input content is pruned instead of the output.
+Prunes tool outputs from context to manage conversation size and reduce noise.
 
 ## IMPORTANT: The Prunable List
 A `<prunable-tools>` list is injected into user messages showing available tool outputs you can prune when there are tools available for pruning. Each line has the format `ID: tool, parameter` (e.g., `20: read, /path/to/file.ts`). You MUST only use numeric IDs that appear in this list to select which tools to prune.
@@ -7,58 +7,63 @@ A `<prunable-tools>` list is injected into user messages showing available tool 
 
 ## CRITICAL: When and How to Prune
 
-You must use this tool in three specific scenarios. The rules for distillation (summarizing findings) differ for each. **You must specify the reason as the first element of the `ids` array** to indicate which scenario applies.
+You must use this tool in three specific scenarios. The rules for distillation (summarizing findings) differ for each. **You must provide a `metadata` object with a `reason` and optional `distillation`** to indicate which scenario applies.
 
 ### 1. Task Completion (Clean Up) — reason: `completion`
 **When:** You have successfully completed a specific unit of work (e.g., fixed a bug, wrote a file, answered a question).
 **Action:** Prune the tools used for that task.
-**Distillation:** Use the `distillation` parameter (as an object) to provide a final confirmation that the task is complete (e.g., `{ "status": "Tests passed, file updated" }`).
+**Distillation:** FORBIDDEN. Do not summarize completed work.
 
 ### 2. Removing Noise (Garbage Collection) — reason: `noise`
 **When:** You have read files or run commands that turned out to be irrelevant, unhelpful, or outdated (meaning later tools have provided fresher, more valid information).
 **Action:** Prune these specific tool outputs immediately.
-**Distillation:** NOT REQUIRED for noise.
+**Distillation:** FORBIDDEN. Do not summarize noise.
 
 ### 3. Context Conservation (Research & Consolidation) — reason: `consolidation`
-**When:** You have gathered useful information. Prune frequently as you work (e.g., after reading a few files), rather than waiting for a "long" phase to end.
+**When:** You have gathered useful information. Wait until you have several items or a few large outputs to prune, rather than doing tiny, frequent prunes. Aim for high-impact prunes that significantly reduce context size.
 **Action:** Convert raw data into distilled knowledge. This allows you to discard large outputs (like full file reads) while keeping only the specific parts you need (like a single function signature or constant).
-**Distillation:** MANDATORY. Use the `distillation` parameter (MUST be an object) to explicitly summarize the key findings from *every* tool you plan to prune.
+**Distillation:** MANDATORY. You MUST provide the distilled findings in the `metadata.distillation` parameter of the `prune` tool (as an object).
    - **Extract specific value:** If you read a large file but only care about one function, record that function's details.
-   - Structure: `{ "file_path": { "findings": "...", "logic": "..." } }`
-   - Capture all relevant details (function names, logic, constraints).
-   - Once distilled into the `distillation` object, the raw tool output can be safely pruned.
+   - **Consolidate:** When pruning multiple tools, your distillation object MUST aggregate findings from ALL of them. Ensure you capture any information necessary to solve the current task.
+   - Structure: Map the `ID` from the `<prunable-tools>` list to its distilled findings.
+     Example: `{ "20": { "findings": "...", "logic": "..." } }`
+   - Capture all relevant details (function names, logic, constraints) to ensure no signal is lost.
+   - Prioritize information that is essential for the immediate next steps of your plan.
+   - Once distilled into the `metadata` object, the raw tool output can be safely pruned.
    - **Know when distillation isn't enough:** If you'll need to edit a file, grep for exact strings, or reference precise syntax, keep the raw output. Distillation works for understanding; implementation often requires the original.
    - **Prefer keeping over re-fetching:** If uncertain whether you'll need the output again, keep it. The cost of retaining context is lower than the cost of redundant tool calls.
 
 ## Best Practices
-- **Consolidate your prunes:** Don't prune a single small tool output (like a short bash command) unless it's pure noise. Wait until you have several items or a few large outputs to prune. Aim for high-impact prunes that significantly reduce context size or noise.
-- **Don't wait too long:** Prune frequently to keep the context agile, but balance this with the need for consolidation.
-- **Be surgical:** You can mix strategies. Prune noise without comment, while distilling useful context in the same turn.
-- **Verify:** Ensure you have captured what you need before deleting useful raw data.
-- **Think ahead:** Before pruning, ask: "Will I need this output for an upcoming task?" If you researched a file you'll later edit, or gathered context for implementation, do NOT prune it—even if you've distilled findings. Distillation captures *knowledge*; implementation requires *context*.
+- **Strategic Consolidation:** Don't prune single small tool outputs (like short bash commands) unless they are pure noise. Instead, wait until you have several items or large outputs to perform high-impact prunes. This balances the need for an agile context with the efficiency of larger batches.
+- **Think ahead:** Before pruning, ask: "Will I need this output for an upcoming task?" If you researched a file you'll later edit, or gathered context for implementation, do NOT prune it.
 
 ## Examples
 
 <example_noise>
 Assistant: [Reads 'wrong_file.ts']
 This file isn't relevant to the auth system. I'll remove it to clear the context.
-[Uses prune with ids: ["noise", "5"]]
+[Uses prune with ids: ["5"], metadata: { "reason": "noise" }]
 </example_noise>
 
 <example_consolidation>
 Assistant: [Reads 5 different config files]
 I'll preserve the configuration details and prune the raw reads.
-[Uses prune with ids: ["consolidation", "10", "11", "12", "13", "14"], distillation: {
-  "config.ts": "uses port 3000",
-  "db.ts": "connects to mongo:27017",
-  "others": "defaults"
+[Uses prune with ids: ["10", "11", "12", "13", "14"], metadata: {
+  "reason": "consolidation",
+  "distillation": {
+    "10": "uses port 3000",
+    "11": "connects to mongo:27017",
+    "12": "defines shared constants",
+    "13": "export defaults",
+    "14": "unused fallback"
+  }
 }]
 </example_consolidation>
 
 <example_completion>
 Assistant: [Runs tests, they pass]
 The tests passed. I'll clean up now.
-[Uses prune with ids: ["completion", "20", "21"], distillation: "Verified feature implementation and passed all tests."]
+[Uses prune with ids: ["20", "21"], metadata: { "reason": "completion" }]
 </example_completion>
 
 <example_keep>
@@ -69,5 +74,5 @@ I've understood the auth flow. I'll need to modify this file to add the new vali
 <example_edit_completion>
 Assistant: [Edits 'auth.ts' to add validation]
 The edit was successful. I no longer need the raw edit content in context.
-[Uses prune with ids: ["completion", "15"]]
+[Uses prune with ids: ["15"], metadata: { "reason": "completion" }]
 </example_edit_completion>

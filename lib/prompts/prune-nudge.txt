@@ -2,9 +2,9 @@
 **CRITICAL CONTEXT WARNING:** Your context window is filling with tool outputs. Strict adherence to context hygiene is required.
 
 **Immediate Actions Required:**
-1. **Garbage Collect:** If you read files or ran commands that yielded no value, prune them NOW. Do not summarize them.
-2. **Task Cleanup:** If a sub-task is complete, prune the tools used.
-3. **Consolidate:** If you are holding valuable raw data, you *must* distill the insights into your narrative and prune the raw entry.
+1. **Task Completion:** If a sub-task is complete, prune the tools used. No distillation.
+2. **Noise Removal:** If you read files or ran commands that yielded no value, prune them NOW. No distillation.
+3. **Consolidation:** If you are holding valuable raw data, you *must* distill the insights into `metadata.distillation` and prune the raw entry.
 
 **Protocol:** You should prioritize this cleanup, but do not interrupt a critical atomic operation if one is in progress. Once the immediate step is done, you must prune.
 </instruction>

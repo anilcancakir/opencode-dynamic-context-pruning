@@ -32,3 +32,6 @@ Thumbs.db
 tests/
 notes/
 test-update.ts
+
+# Documentation (local development only)
+docs/
