@@ -37,6 +37,13 @@ You MUST provide distilled findings in the `distillation` parameter. This is not
 - **Strategic Batching:** Wait until you have several items or a few large outputs to extract, rather than doing tiny, frequent extractions. Aim for high-impact extractions that significantly reduce context size.
 - **Think ahead:** Before extracting, ask: "Will I need the raw output for an upcoming task?" If you researched a file you'll later edit, do NOT extract it.
 
+## Format
+The `ids` parameter is an array of numeric IDs as strings:
+`ids: ["id1", "id2", ...]`
+
+The `distillation` parameter is an object mapping each ID to its distilled findings:
+`distillation: { "id1": { ...findings... }, "id2": { ...findings... } }`
+
 ## Example
 
 <example_extraction>
