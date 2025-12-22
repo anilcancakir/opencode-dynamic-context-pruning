@@ -206,8 +206,17 @@ const pruneToolInputs = (
                 continue
             }
 
-            if (part.state.input?.content !== undefined) {
+            // Write tool has content field, edit tool has oldString/newString fields
+            if (part.tool === 'write' && part.state.input?.content !== undefined) {
                 part.state.input.content = PRUNED_TOOL_INPUT_REPLACEMENT
+            }
+            if (part.tool === 'edit') {
+                if (part.state.input?.oldString !== undefined) {
+                    part.state.input.oldString = PRUNED_TOOL_INPUT_REPLACEMENT
+                }
+                if (part.state.input?.newString !== undefined) {
+                    part.state.input.newString = PRUNED_TOOL_INPUT_REPLACEMENT
+                }
             }
         }
     }

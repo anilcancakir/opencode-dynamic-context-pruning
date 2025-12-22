@@ -55,12 +55,23 @@ export const calculateTokensSaved = (
                 }
                 // For write and edit tools, count input content as that is all we prune for these tools
                 // (input is present in both completed and error states)
-                if (part.tool === "write" || part.tool === "edit") {
+                if (part.tool === "write") {
                     const inputContent = part.state.input?.content
                     const content = typeof inputContent === 'string'
                         ? inputContent
                         : JSON.stringify(inputContent ?? '')
                     contents.push(content)
+                    continue
+                }
+                if (part.tool === "edit") {
+                    const oldString = part.state.input?.oldString
+                    const newString = part.state.input?.newString
+                    if (typeof oldString === 'string') {
+                        contents.push(oldString)
+                    }
+                    if (typeof newString === 'string') {
+                        contents.push(newString)
+                    }
                     continue
                 }
                 // For other tools, count output or error based on status
