@@ -3,8 +3,8 @@ import type { Logger } from "../logger"
 import type { PluginConfig } from "../config"
 import { loadPrompt } from "../prompt"
 import { extractParameterKey, buildToolIdList } from "./utils"
-import { getLastAssistantMessage, isMessageCompacted } from "../shared-utils"
-import { AssistantMessage } from "@opencode-ai/sdk"
+import { getLastAssistantMessage, getLastUserMessage, isMessageCompacted } from "../shared-utils"
+import { AssistantMessage, UserMessage } from "@opencode-ai/sdk"
 
 const PRUNED_TOOL_INPUT_REPLACEMENT = "[Input removed to save context]"
 const PRUNED_TOOL_OUTPUT_REPLACEMENT =
@@ -168,16 +168,22 @@ export const insertPruneToolContext = (
     messages.push(assistantMessage)
 
     // For reasoning models, append a synthetic user message to close the assistant turn.
-    // This is required because reasoning models expect their reasoning parts in the last
-    // assistant message, which we cannot generate. The user message signals a complete turn.
     if (state.isReasoningModel) {
+        const lastRealUserMessage = getLastUserMessage(messages)
+        const userMessageInfo = lastRealUserMessage?.info as UserMessage | undefined
+
         const userMessage: WithParts = {
             info: {
                 id: SYNTHETIC_USER_MESSAGE_ID,
                 sessionID: assistantInfo.sessionID,
                 role: "user",
                 time: { created: Date.now() + 1 },
-            } as any, // Using 'as any' because we're creating a minimal synthetic message
+                agent: userMessageInfo?.agent ?? "code",
+                model: userMessageInfo?.model ?? {
+                    providerID: assistantInfo.providerID,
+                    modelID: assistantInfo.modelID,
+                },
+            } as UserMessage,
             parts: [
                 {
                     id: SYNTHETIC_USER_PART_ID,
