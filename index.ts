@@ -30,6 +30,21 @@ const plugin: Plugin = (async (ctx) => {
             _input: unknown,
             output: { system: string[] },
         ) => {
+            const systemText = output.system.join("\n")
+            const internalAgentSignatures = [
+                "You are a title generator",
+                "You are a helpful AI assistant tasked with summarizing conversations",
+                "Summarize what was done in this conversation",
+            ]
+            if (internalAgentSignatures.some((sig) => systemText.includes(sig))) {
+                logger.info("Skipping DCP injection for internal agent")
+                state.isInternalAgent = true
+                return
+            }
+
+            // Reset flag for normal sessions
+            state.isInternalAgent = false
+
             const discardEnabled = config.tools.discard.enabled
             const extractEnabled = config.tools.extract.enabled
 
