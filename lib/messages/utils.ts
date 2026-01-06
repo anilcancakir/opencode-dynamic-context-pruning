@@ -8,6 +8,7 @@ const SYNTHETIC_PART_ID = "prt_01234567890123456789012345"
 
 export const createSyntheticUserMessage = (baseMessage: WithParts, content: string): WithParts => {
     const userInfo = baseMessage.info as UserMessage
+    const variant = (userInfo as any).variant
     return {
         info: {
             id: SYNTHETIC_MESSAGE_ID,
@@ -19,6 +20,7 @@ export const createSyntheticUserMessage = (baseMessage: WithParts, content: stri
                 providerID: userInfo.model.providerID,
                 modelID: userInfo.model.modelID,
             },
+            ...(variant !== undefined && { variant }),
         },
         parts: [
             {
