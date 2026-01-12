@@ -49,6 +49,7 @@ export const createSyntheticAssistantMessageWithToolPart = (
             id: SYNTHETIC_MESSAGE_ID,
             sessionID: userInfo.sessionID,
             role: "assistant",
+            agent: userInfo.agent || "code",
             parentID: userInfo.id,
             modelID: userInfo.model.modelID,
             providerID: userInfo.model.providerID,

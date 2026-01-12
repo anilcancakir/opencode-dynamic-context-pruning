@@ -143,6 +143,12 @@ export const insertPruneToolContext = (
     const isGitHubCopilot =
         providerID === "github-copilot" || providerID === "github-copilot-enterprise"
 
+    logger.info("Injecting prunable-tools list", {
+        providerID,
+        isGitHubCopilot,
+        injectionType: isGitHubCopilot ? "assistant-with-tool-part" : "user-message",
+    })
+
     if (isGitHubCopilot) {
         messages.push(
             createSyntheticAssistantMessageWithToolPart(lastUserMessage, prunableToolsContent),
