@@ -32,13 +32,14 @@ const pruneToolOutputs = (state: SessionState, logger: Logger, messages: WithPar
             if (!state.prune.toolIds.includes(part.callID)) {
                 continue
             }
-            // Skip write/edit (protected) and question (output contains answers we want to keep)
-            if (part.tool === "write" || part.tool === "edit" || part.tool === "question") {
+            if (part.state.status !== "completed") {
                 continue
             }
-            if (part.state.status === "completed") {
-                part.state.output = PRUNED_TOOL_OUTPUT_REPLACEMENT
+            if (part.tool === "question") {
+                continue
             }
+
+            part.state.output = PRUNED_TOOL_OUTPUT_REPLACEMENT
         }
     }
 }
@@ -59,8 +60,11 @@ const pruneToolInputs = (state: SessionState, logger: Logger, messages: WithPart
             if (part.state.status !== "completed") {
                 continue
             }
+            if (part.tool !== "question") {
+                continue
+            }
 
-            if (part.tool === "question" && part.state.input?.questions !== undefined) {
+            if (part.state.input?.questions !== undefined) {
                 part.state.input.questions = PRUNED_QUESTION_INPUT_REPLACEMENT
             }
         }
