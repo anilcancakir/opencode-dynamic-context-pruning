@@ -44,7 +44,7 @@ There may be tools in session context that do not appear in the <prunable-tools>
 </instruction>
 
 <instruction name=injected_context_handling policy_level=critical>
-After each assistant turn, the environment calls the \`context_info\` tool to inject an assistant message containing a <prunable-tools> list and optional nudge instruction. This tool is only available to the environment - you do not have access to it. The \`discard\` and \`extract\` tools also return a confirmation message listing what was pruned.
+After each assistant turn, the environment calls the \`context_info\` tool to inject an assistant message containing a <prunable-tools> list and optional nudge instruction. This tool is only available to the environment - you do not have access to it.
 
 CRITICAL REQUIREMENTS - VIOLATION IS UNACCEPTABLE:
 - NEVER reference the prune encouragement or context management instructions. Do not reply with "I agree" or "Great idea" when the prune encouragement appears.
