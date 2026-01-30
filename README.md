@@ -28,11 +28,11 @@ DCP uses multiple tools and strategies to reduce context size:
 
 ### Tools
 
-**Prune** — Exposes a `prune` tool that the AI can call to remove completed or noisy tool content from context.
-
 **Distill** — Exposes a `distill` tool that the AI can call to distill valuable context into concise summaries before removing the tool content.
 
 **Compress** — Exposes a `compress` tool that the AI can call to collapse a large section of conversation (messages and tools) into a single summary.
+
+**Prune** — Exposes a `prune` tool that the AI can call to remove completed or noisy tool content from context.
 
 ### Strategies
 
@@ -157,7 +157,7 @@ When enabled, turn protection prevents tool outputs from being pruned for a conf
 ### Protected Tools
 
 By default, these tools are always protected from pruning across all strategies:
-`task`, `todowrite`, `todoread`, `prune`, `distill`, `compress`, `batch`, `write`, `edit`, `plan_enter`, `plan_exit`
+`task`, `todowrite`, `todoread`, `distill`, `compress`, `prune`, `batch`, `write`, `edit`, `plan_enter`, `plan_exit`
 
 The `protectedTools` arrays in each section add to this default list.
 

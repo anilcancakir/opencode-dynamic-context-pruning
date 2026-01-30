@@ -21,9 +21,9 @@ bun run dcp [TYPE] [-p] [-d] [-c]
 
 | Flag             | Description          |
 | ---------------- | -------------------- |
-| `-p, --prune`    | Enable prune tool    |
 | `-d, --distill`  | Enable distill tool  |
 | `-c, --compress` | Enable compress tool |
+| `-p, --prune`    | Enable prune tool    |
 
 If no tool flags specified, all are enabled.
 

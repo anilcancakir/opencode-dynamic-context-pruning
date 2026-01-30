@@ -8,13 +8,13 @@ import { SYSTEM as SYSTEM_PROMPT } from "./system.generated"
 import { NUDGE } from "./nudge.generated"
 
 export interface ToolFlags {
-    prune: boolean
     distill: boolean
     compress: boolean
+    prune: boolean
 }
 
 function processConditionals(template: string, flags: ToolFlags): string {
-    const tools = ["prune", "distill", "compress"] as const
+    const tools = ["distill", "compress", "prune"] as const
     let result = template
     // Strip comments: // ... //
     result = result.replace(/\/\/.*?\/\//g, "")
