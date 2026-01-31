@@ -88,6 +88,26 @@ export async function loadSessionState(
             return null
         }
 
+        if (Array.isArray(state.compressSummaries)) {
+            const validSummaries = state.compressSummaries.filter(
+                (s): s is CompressSummary =>
+                    s !== null &&
+                    typeof s === "object" &&
+                    typeof s.anchorMessageId === "string" &&
+                    typeof s.summary === "string",
+            )
+            if (validSummaries.length !== state.compressSummaries.length) {
+                logger.warn("Filtered out malformed compressSummaries entries", {
+                    sessionId: sessionId,
+                    original: state.compressSummaries.length,
+                    valid: validSummaries.length,
+                })
+            }
+            state.compressSummaries = validSummaries
+        } else {
+            state.compressSummaries = []
+        }
+
         logger.info("Loaded session state from disk", {
             sessionId: sessionId,
         })

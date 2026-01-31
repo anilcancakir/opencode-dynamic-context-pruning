@@ -21,7 +21,6 @@ export function createCompressTool(ctx: PruneToolContext): ReturnType<typeof too
         args: {
             input: tool.schema
                 .array(tool.schema.string())
-                .length(4)
                 .describe(
                     "[startString, endString, topic, summary] - 4 required strings: (1) startString: unique text from conversation marking range start, (2) endString: unique text marking range end, (3) topic: short 3-5 word label for UI, (4) summary: comprehensive text replacing all compressed content",
                 ),
@@ -30,7 +29,31 @@ export function createCompressTool(ctx: PruneToolContext): ReturnType<typeof too
             const { client, state, logger } = ctx
             const sessionId = toolCtx.sessionID
 
+            if (!Array.isArray(args.input)) {
+                throw new Error(
+                    'input must be an array of 4 strings: ["startString", "endString", "topic", "summary"]',
+                )
+            }
+            if (args.input.length !== 4) {
+                throw new Error(
+                    `input must be an array of exactly 4 strings: ["startString", "endString", "topic", "summary"], got ${args.input.length} elements`,
+                )
+            }
+
             const [startString, endString, topic, summary] = args.input
+
+            if (!startString || typeof startString !== "string") {
+                throw new Error("startString is required and must be a non-empty string")
+            }
+            if (!endString || typeof endString !== "string") {
+                throw new Error("endString is required and must be a non-empty string")
+            }
+            if (!topic || typeof topic !== "string") {
+                throw new Error("topic is required and must be a non-empty string")
+            }
+            if (!summary || typeof summary !== "string") {
+                throw new Error("summary is required and must be a non-empty string")
+            }
 
             logger.info("Compress tool invoked")
             // logger.info(
