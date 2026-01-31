@@ -52,7 +52,9 @@ LLM providers like Anthropic and OpenAI cache prompts based on exact prefix matc
 
 > **Note:** In testing, cache hit rates were approximately 65% with DCP enabled vs 85% without.
 
-**Best use case:** Providers that count usage in requests, such as Github Copilot and Google Antigravity have no negative price impact.
+**Best use case:** Providers that count usage in requests, such as Github Copilot and Google Antigravity, have no negative price impact.
+
+**Claude Subscriptions:** Anthropic subscription users (who receive "free" caching) may experience faster limit depletion than hit-rate ratios suggest due to the higher relative cost of cache misses. See [Claude Cache Limits](https://she-llac.com/claude-limits) for details.
 
 ## Configuration
 
