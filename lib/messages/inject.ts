@@ -7,9 +7,7 @@ import {
     extractParameterKey,
     buildToolIdList,
     createSyntheticUserMessage,
-    createSyntheticAssistantMessage,
     createSyntheticToolPart,
-    isDeepSeekOrKimi,
     isIgnoredUserMessage,
 } from "./utils"
 import { getFilePathFromParameters, isProtectedFilePath } from "../protected-file-patterns"
@@ -197,21 +195,11 @@ export const insertPruneToolContext = (
     if (!lastNonIgnoredMessage || lastNonIgnoredMessage.info.role === "user") {
         messages.push(createSyntheticUserMessage(lastUserMessage, combinedContent, variant))
     } else {
-        // For DeepSeek and Kimi, append tool part to existing message, for some reason they don't
-        // output reasoning parts following an assistant injection containing either just text part,
-        // or text part with synth reasoning, and there's no docs on how their reasoning encryption
-        // works as far as I can find. IDK what's going on here, seems like the only possible ways
-        // to inject for them is a user role message, or a tool part apeended to last assistant message.
-        const providerID = userInfo.model?.providerID || ""
-        const modelID = userInfo.model?.modelID || ""
-
-        if (isDeepSeekOrKimi(providerID, modelID)) {
-            const toolPart = createSyntheticToolPart(lastNonIgnoredMessage, combinedContent)
-            lastNonIgnoredMessage.parts.push(toolPart)
-        } else {
-            messages.push(
-                createSyntheticAssistantMessage(lastUserMessage, combinedContent, variant),
-            )
-        }
+        // Append tool part to existing assistant message. This approach works universally across
+        // models including DeepSeek and Kimi which don't output reasoning parts following an
+        // assistant injection containing text parts. Tool parts appended to the last assistant
+        // message are the safest way to inject context without disrupting model behavior.
+        const toolPart = createSyntheticToolPart(lastNonIgnoredMessage, combinedContent)
+        lastNonIgnoredMessage.parts.push(toolPart)
     }
 }
