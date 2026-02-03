@@ -29,6 +29,13 @@ export function createCompressTool(ctx: PruneToolContext): ReturnType<typeof too
             const { client, state, logger } = ctx
             const sessionId = toolCtx.sessionID
 
+            await toolCtx.ask({
+                permission: "compress",
+                patterns: ["*"],
+                always: ["*"],
+                metadata: {},
+            })
+
             if (!Array.isArray(args.input)) {
                 throw new Error(
                     'input must be an array of 4 strings: ["startString", "endString", "topic", "summary"]',
