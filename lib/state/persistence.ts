@@ -25,7 +25,13 @@ export interface PersistedSessionState {
     lastUpdated: string
 }
 
-const STORAGE_DIR = join(homedir(), ".local", "share", "opencode", "storage", "plugin", "dcp")
+const STORAGE_DIR = join(
+    process.env.XDG_DATA_HOME || join(homedir(), ".local", "share"),
+    "opencode",
+    "storage",
+    "plugin",
+    "dcp",
+)
 
 async function ensureStorageDir(): Promise<void> {
     if (!existsSync(STORAGE_DIR)) {
