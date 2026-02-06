@@ -110,7 +110,7 @@
                             "description": "Tool names that should be protected from automatic pruning"
                         },
                         "contextLimit": {
-                            "description": "When session tokens exceed this limit, a compress nudge is injected (\"model\" uses the active model's context limit)",
+                            "description": "When session tokens exceed this limit, a compress nudge is injected (\"model\" uses the active model's context limit, \"X%\" uses percentage of the model's context window)",
                             "default": 100000,
                             "oneOf": [
                                 {
@@ -119,6 +119,10 @@
                                 {
                                     "type": "string",
                                     "enum": ["model"]
+                                },
+                                {
+                                    "type": "string",
+                                    "pattern": "^\\d+(?:\\.\\d+)?%$"
                                 }
                             ]
                         }

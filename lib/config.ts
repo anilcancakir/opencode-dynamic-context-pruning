@@ -27,7 +27,7 @@ export interface ToolSettings {
     nudgeEnabled: boolean
     nudgeFrequency: number
     protectedTools: string[]
-    contextLimit: number | "model"
+    contextLimit: number | "model" | `${number}%`
 }
 
 export interface Tools {
@@ -290,13 +290,16 @@ function validateConfigTypes(config: Record<string, any>): ValidationError[] {
                 })
             }
             if (tools.settings.contextLimit !== undefined) {
-                if (
-                    typeof tools.settings.contextLimit !== "number" &&
-                    tools.settings.contextLimit !== "model"
-                ) {
+                const isValidNumber = typeof tools.settings.contextLimit === "number"
+                const isModelString = tools.settings.contextLimit === "model"
+                const isPercentString =
+                    typeof tools.settings.contextLimit === "string" &&
+                    tools.settings.contextLimit.endsWith("%")
+
+                if (!isValidNumber && !isModelString && !isPercentString) {
                     errors.push({
                         key: "tools.settings.contextLimit",
-                        expected: 'number | "model"',
+                        expected: 'number | "model" | "${number}%"',
                         actual: JSON.stringify(tools.settings.contextLimit),
                     })
                 }

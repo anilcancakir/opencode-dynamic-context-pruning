@@ -13,6 +13,20 @@ import { getFilePathsFromParameters, isProtected } from "../protected-file-patte
 import { getLastUserMessage, isMessageCompacted } from "../shared-utils"
 import { getCurrentTokenUsage } from "../strategies/utils"
 
+function parsePercentageString(value: string, total: number): number | undefined {
+    if (!value.endsWith("%")) return undefined
+    const percent = parseFloat(value.slice(0, -1))
+
+    if (isNaN(percent)) {
+        return undefined
+    }
+
+    const roundedPercent = Math.round(percent)
+    const clampedPercent = Math.max(0, Math.min(100, roundedPercent))
+
+    return Math.round((clampedPercent / 100) * total)
+}
+
 // XML wrappers
 export const wrapPrunableTools = (content: string): string => {
     return `<prunable-tools>
@@ -54,9 +68,22 @@ Context management was just performed. Do NOT use the ${toolName} again. A fresh
 
 const resolveContextLimit = (config: PluginConfig, state: SessionState): number | undefined => {
     const configLimit = config.tools.settings.contextLimit
-    if (configLimit === "model") {
-        return state.modelContextLimit
+
+    if (typeof configLimit === "string") {
+        if (configLimit.endsWith("%")) {
+            if (state.modelContextLimit === undefined) {
+                return undefined
+            }
+            return parsePercentageString(configLimit, state.modelContextLimit)
+        }
+
+        if (configLimit === "model") {
+            return state.modelContextLimit
+        }
+
+        return undefined
     }
+
     return configLimit
 }
 
